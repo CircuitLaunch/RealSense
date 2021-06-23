@@ -26,12 +26,7 @@ class PointCloudWindow : public Window
       mTex(),
       mPipeline(),
       mPCLCloud(new PointCloud<PointXYZ>),
-      mPCLFiltered(new PointCloud<PointXYZ>),
-      mPCLLayers()
-    {
-      mPCLLayers.push_back(mPCLCloud);
-      mPCLLayers.push_back(mPCLFiltered);
-    }
+      mPCLFiltered(new PointCloud<PointXYZ>) { }
 
     virtual void setup() {
       mPipeline.start();
@@ -75,8 +70,10 @@ class PointCloudWindow : public Window
 
     void initPCLCloud(points &iPointCloud);
 
+    void setUp();
     void drawPointCloud(points &iPointCloud);
     void drawPCLPointClouds(vector<PointCloud<PointXYZ>::Ptr> &iPointClouds);
+    void tearDown();
 
   protected:
     double mYaw;
@@ -92,7 +89,6 @@ class PointCloudWindow : public Window
 
     PointCloud<PointXYZ>::Ptr mPCLCloud;
     PointCloud<PointXYZ>::Ptr mPCLFiltered;
-    vector<PointCloud<PointXYZ>::Ptr> mPCLLayers;
 };
 
 void PointCloudWindow::initPCLCloud(points &iPointCloud)
@@ -114,7 +110,7 @@ void PointCloudWindow::initPCLCloud(points &iPointCloud)
   }
 }
 
-void PointCloudWindow::drawPointCloud(points &iPointCloud)
+void PointCloudWindow::setUp()
 {
   glLoadIdentity();
   glPushAttrib(GL_ALL_ATTRIB_BITS);
@@ -134,9 +130,13 @@ void PointCloudWindow::drawPointCloud(points &iPointCloud)
   glRotated(mPitch, 1, 0, 0);
   glRotated(mYaw, 0, 1, 0);
   glTranslatef(0, 0, -0.5f);
-  glScalef(1.0, 1280.0 / 720.0, 1.0);
+  glScalef(1.0, float(mWidth) / float(mHeight), 1.0);
 
   glPointSize(mWidth / 640);
+}
+
+void PointCloudWindow::drawPointCloud(points &iPointCloud)
+{
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_TEXTURE_2D);
 
@@ -161,11 +161,6 @@ void PointCloudWindow::drawPointCloud(points &iPointCloud)
   glEnd();
 
   mTex.unbind();
-
-  glPopMatrix();
-  glMatrixMode(GL_PROJECTION);
-  glPopMatrix();
-  glPopAttrib();
 }
 
 typedef struct float3
@@ -178,27 +173,7 @@ typedef struct float3
 
 void PointCloudWindow::drawPCLPointClouds(vector<PointCloud<PointXYZ>::Ptr> &iPointClouds)
 {
-  glLoadIdentity();
-  glPushAttrib(GL_ALL_ATTRIB_BITS);
-
-  glClearColor(0.0, 0.0, 0.0, 1.0);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-  glMatrixMode(GL_PROJECTION);
-  glPushMatrix();
-  gluPerspective(60, mWidth / mHeight, 0.01f, 10.0f);
-
-  glMatrixMode(GL_MODELVIEW);
-  glPushMatrix();
-  gluLookAt(0, 0, 0, 0, 0, 1, 0, -1, 0);
-
-  glTranslatef(0, 0, +0.5f + mOffsetY * 0.05f);
-  glRotated(mPitch, 1, 0, 0);
-  glRotated(mYaw, 0, 1, 0);
-  glTranslatef(0, 0, -0.5f);
-  glScalef(1.0, 1280.0 / 720.0, 1.0);
-
-  glPointSize(mWidth / 640);
+  glClear(GL_DEPTH_BUFFER_BIT);
   // glEnable(GL_DEPTH_TEST);
   // glEnable(GL_TEXTURE_2D);
 
@@ -224,7 +199,10 @@ void PointCloudWindow::drawPCLPointClouds(vector<PointCloud<PointXYZ>::Ptr> &iPo
 
     i++;
   }
+}
 
+void PointCloudWindow::tearDown()
+{
   glPopMatrix();
   glMatrixMode(GL_PROJECTION);
   glPopMatrix();
@@ -245,49 +223,53 @@ void PointCloudWindow::loop()
   pc.map_to(color);
   p = pc.calculate(depth);
 
-  if(true) {
-    initPCLCloud(p);
-    PassThrough<PointXYZ> pass;
-    pass.setInputCloud(mPCLCloud);
-    pass.setFilterFieldName("z");
-    pass.setFilterLimits(0.0, 0.5);
-    pass.filter(*mPCLFiltered);
+  setUp();
 
-    drawPCLPointClouds(mPCLLayers);
-  } else {
-    GLint glIntFormat;
-    GLenum glFormat, glType;
+  GLint glIntFormat;
+  GLenum glFormat, glType;
 
-    switch(color.get_profile().format()) {
-      case RS2_FORMAT_RGB8:
-        glIntFormat = GL_RGB;
-        glFormat = GL_RGB;
-        glType = GL_UNSIGNED_BYTE;
-        break;
-      case RS2_FORMAT_RGBA8:
-        glIntFormat = GL_RGBA;
-        glFormat = GL_RGBA;
-        glType = GL_UNSIGNED_BYTE;
-        break;
-      case RS2_FORMAT_Y8:
-        glIntFormat = GL_RGB;
-        glFormat = GL_LUMINANCE;
-        glType = GL_UNSIGNED_BYTE;
-        break;
-      case RS2_FORMAT_Y10BPACK:
-        glIntFormat = GL_LUMINANCE;
-        glFormat = GL_LUMINANCE;
-        glType = GL_UNSIGNED_SHORT;
-        break;
-    }
-
-    int width = color.get_width();
-    int height = color.get_height();
-
-    mTex.upload(glIntFormat, glFormat, glType, width, height, color.get_data());
-
-    drawPointCloud(p);
+  switch(color.get_profile().format()) {
+    case RS2_FORMAT_RGB8:
+      glIntFormat = GL_RGB;
+      glFormat = GL_RGB;
+      glType = GL_UNSIGNED_BYTE;
+      break;
+    case RS2_FORMAT_RGBA8:
+      glIntFormat = GL_RGBA;
+      glFormat = GL_RGBA;
+      glType = GL_UNSIGNED_BYTE;
+      break;
+    case RS2_FORMAT_Y8:
+      glIntFormat = GL_RGB;
+      glFormat = GL_LUMINANCE;
+      glType = GL_UNSIGNED_BYTE;
+      break;
+    case RS2_FORMAT_Y10BPACK:
+      glIntFormat = GL_LUMINANCE;
+      glFormat = GL_LUMINANCE;
+      glType = GL_UNSIGNED_SHORT;
+      break;
   }
+
+  int width = color.get_width();
+  int height = color.get_height();
+
+  mTex.upload(glIntFormat, glFormat, glType, width, height, color.get_data());
+
+  drawPointCloud(p);
+
+  initPCLCloud(p);
+  PassThrough<PointXYZ> pass;
+  pass.setInputCloud(mPCLCloud);
+  pass.setFilterFieldName("z");
+  pass.setFilterLimits(0.0, 0.5);
+  pass.filter(*mPCLFiltered);
+  vector<PointCloud<PointXYZ>::Ptr> layers;
+  layers.push_back(mPCLFiltered);
+
+  drawPCLPointClouds(layers);
+
+  tearDown();
 }
 
 int main(int c, char **v)

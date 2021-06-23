@@ -34,6 +34,11 @@ namespace edj
           default: break;
         }
       });
+    glfwSetWindowSizeCallback(mWin, [](GLFWwindow *w, int width, int height) {
+        auto self = (Window *) glfwGetWindowUserPointer(w);
+        self->mWidth = width;
+        self->mHeight = height;
+      });
   }
 
   Window::~Window()
