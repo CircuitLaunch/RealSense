@@ -1,0 +1,3 @@
+/home/tigakub/Documents/RealSense/build/CMakeFiles/rebuild_cache.dir
+/home/tigakub/Documents/RealSense/build/CMakeFiles/edit_cache.dir
+/home/tigakub/Documents/RealSense/build/CMakeFiles/realsense_test.dir
