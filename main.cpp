@@ -126,7 +126,7 @@ void PointCloudWindow::setUp()
   glPushMatrix();
   gluLookAt(0, 0, 0, 0, 0, 1, 0, -1, 0);
 
-  glTranslatef(0, 0, +0.5f + mOffsetY * 0.05f);
+  glTranslatef(0, 0, 0.5f + mOffsetY * 0.05f);
   glRotated(mPitch, 1, 0, 0);
   glRotated(mYaw, 0, 1, 0);
   glTranslatef(0, 0, -0.5f);
